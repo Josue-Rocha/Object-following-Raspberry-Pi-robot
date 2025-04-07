@@ -19,3 +19,59 @@ For the ball the robot will be tracking, I decided on using a tennis ball. I fig
 - https://universe.roboflow.com/cse-571/tennis-balls-pomv8/browse?queryText=&pageSize=50&startingIndex=50&browseQuery=true
 - https://universe.roboflow.com/tennis-3ll0a/tennis-ball-icifx/browse?queryText=&pageSize=50&startingIndex=50&browseQuery=true
 Given the large sum of the images, I have not yet been able to finish sorting the images into training, validation, and "unknown" sets but have been great progress. I have chosen a wide array of images to download with variations in quality, lighting, background, position, etc. so as to have as robust of a data set as possible. Aditionally, I intentionally tried to look for images of tennis balls that are slightly covered (by a person's hand holding it, a dog biting it, etc.). This is because somebody will have to be holding the tennis ball, so it won't appear as a perfect circle in each frame. Given that the goal would be to have the robot track just one ball (and having multiple balls could greatly complicate things) so I filtered the data set so that each image has exactly one tennis ball. No more and no less.
+
+## Part 3
+As part of my project to create a tennis ball-tracking robot using the Raspberry Pi 5, I’ve started by building a deep learning-based proof of concept in Google Colab. The goal at this stage is to train a model that can detect a tennis ball from a live webcam feed on a computer. Once this model works reliably in that environment, I’ll adapt and deploy it to the Raspberry Pi to control robot movement in real time.
+
+Firstly, to access my dataset in Google Colab, I mounted my Google Drive. I chose Google Drive because it provides persistent storage across Colab sessions, and it’s easy to organize my dataset into folders for training, validation, and testing. This setup makes working with large numbers of images more manageable, and it’s especially convenient when working across multiple devices or sessions.
+
+Secondly, To handle preprocessing and augmentation, I used TensorFlow's ImageDataGenerator
+Here’s a breakdown of what I did and why I did it:
+
+Rescaling Pixel Values
+I normalized the pixel values by dividing them by 255 (rescale=1./255). This transforms pixel intensity values from the range [0, 255] to [0, 1]. Neural networks tend to train faster and more effectively when the input data is normalized, so this step was essential.
+
+Resizing
+I resized all images to 224x224 pixels. This is the default input size expected by MobileNetV2, the CNN architecture I’m using. It’s also a good balance between preserving visual details and keeping computation lightweight.
+
+Data Augmentation
+To improve the model’s robustness and prevent overfitting, I applied real-time data augmentation to the training images. I included:
+
+- Random rotations (up to 30 degrees)
+
+- Shifts in width and height
+
+- Shearing and zooming
+
+- Horizontal flipping
+
+This helps simulate how the tennis ball might appear in different orientations and lighting conditions during real-world use. It also makes the model less reliant on memorizing specific patterns in the training set.
+
+Next, for feature extraction, I chose to use a Convolutional Neural Network (CNN), specifically MobileNetV2, which I imported from TensorFlow’s application module.
+
+Why Use a CNN Instead of Traditional Methods?
+Originally, I considered using traditional feature detection methods like color segmentation or contour detection. But those methods can break down under varying lighting conditions, complex backgrounds, or partial occlusion. CNNs, on the other hand, learn hierarchical features directly from the data, making them much more robust and accurate in real-world scenarios.
+
+Why MobileNetV2?
+I picked MobileNetV2 for several reasons:
+
+It’s designed for mobile and embedded devices, so it’s lightweight and efficient—perfect for later deployment on the Raspberry Pi.
+
+It’s pre-trained on ImageNet, so I can use it for transfer learning. This lets me benefit from learned visual features without needing massive amounts of training data.
+
+It has fast inference times, which will be useful when the robot needs to react in real time.
+
+Model Setup
+I used the MobileNetV2 base with include_top=False, which removes the final classification layer. This allows me to add my own output layer for detecting tennis balls.
+
+I also froze the base model’s weights by setting base_model.trainable = False. This prevents the pre-trained layers from updating during training and makes the training process faster and less data-hungry.
+
+Custom Head
+I added a lightweight classification head on top of the MobileNetV2 base:
+
+A GlobalAveragePooling2D layer to flatten the feature maps.
+
+A dense layer with 64 units and ReLU activation for non-linearity.
+
+A final dense layer with 1 unit and a sigmoid activation for binary classification.
+
