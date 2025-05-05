@@ -91,4 +91,59 @@ To improve accuracy, I could calibrate the HSV range more precisely by using a c
 
 Overall, this basic implementation sets the stage for an interactive robot that visually tracks and follows a tennis ball. With further refinements, the system can become both more accurate and hopefully more adaptable to different environments. While using a more traditional OpenCV Feature Based method is bound to be less accurate than a well-trained Neural Network, it does have its advantages. Simply put, this method is simpler, and computationally efficient which is helpful since the Pi still has to implement things such as the motor controls. Additionally, I know that this robot will be operating under a controlled environment, and as such it doesn’t need to be the most generalizable, adaptable thing in the world.
 
+## Part 5
+
+Final Project Update: Autonomous Tennis Ball Tracking Robot (Raspberry Pi 5)
+As of this final update, I’ve successfully transitioned my Raspberry Pi 5-based robot from manual joystick control to fully autonomous movement using computer vision. The robot can now identify a tennis ball in its field of view, track its position and relative size in real time, and drive toward it (or back away) accordingly—all without human input.
+What’s Working
+Real-Time Object Tracking
+ Using the Picamera2 library and OpenCV, the robot captures 640x480 frames and isolates the tennis ball via HSV color masking.
+Autonomous Motion Control
+By comparing the center and size of the detected bounding box to the previous frame, the robot calculates two key deltas:
+
+dx (horizontal offset) → controls turning
+
+dw (size change) → controls forward/reverse motion
+
+These values are scaled, clamped, and translated into motion commands.
+
+The Sabertooth motor controller then receives these values via saber.drive(speed, turn).
+
+Fail-Safe Handling
+If the ball isn't detected or the contour is too small, the robot halts via saber.stop(). This prevents uncontrolled behavior in the absence of a valid target.
+
+Consistent Frame Loop
+A short delay (time.sleep(0.04)) is used to maintain a ~25 FPS control loop, avoiding overload and keeping movement smooth.
+
+Key Improvements from the Manual Version
+Completely Removed PS5 Controller Dependence
+The controller-based interface has been fully replaced with vision-based decision making. The robot no longer requires external input to move and orient itself.
+
+Real-World Feedback Loop
+Unlike the manual version, the robot now actively interprets and responds to real-world environmental changes in real time.
+
+Smooth, Interpretable Behavior
+By clamping and scaling turn/speed values, I’ve eliminated the erratic or jerky motion that occurred in earlier test versions.
+
+What’s Still Left or Could Be Improved
+Detection Stability
+Rapid lighting changes or partial occlusions can still affect detection. I’d like to implement temporal smoothing—averaging dx and dw over the last few frames—to make movement more stable.
+
+PID-Like Control
+Right now, the motion logic is based on simple proportional scaling. Replacing this with a PID controller would improve precision, especially when the robot is close to the ball.
+
+Obstacle Avoidance
+The robot currently assumes a clear path. Incorporating depth sensors (like an ultrasonic or IR sensor) would help prevent collisions with objects that are not the target.
+
+Better Visual Feedback
+While I currently display the bounding box and motion parameters on the robot’s display, I’d like to add more visual debugging tools like trail drawing or logging to help with fine-tuning.
+
+Takeaways
+This has been a rewarding upgrade. I now have a working proof-of-concept of a self-guided robot that uses basic vision to interact with its environment. Even though the current approach uses traditional image processing (rather than machine learning), it’s responsive and performs surprisingly well in ideal indoor conditions.
+
+It’s a solid base for further experimentation with smarter navigation, reinforcement learning, or SLAM-based mapping. I’m especially happy with how modular the system now is—camera input, image processing, and motion logic are cleanly separated, so improvements in one area won’t break the others.
+
+Link to video:
+https://drive.google.com/file/d/1cTPNYxaT-rjdgUozTOqdM5IrQorh2b8P/view?usp=sharing 
+
 
